@@ -167,7 +167,6 @@ int main(int argc, char **argv)
 {
 	int       result = OK;
 	int       x;
-	uint32_t  y;
 	char      buffer[MAX_INPUT_BUFFER];
 
 	init();
@@ -394,6 +393,11 @@ void init_ssl(void)
 			SSL_CTX_set_max_proto_version(ctx, SSL3_VERSION);
 		case SSLv3_plus:
 			SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
+			break;
+
+		case SSLv2:
+		case SSLv2_plus:
+			/* SSLv2 support dropped */
 			break;
 	}
 
@@ -772,16 +776,12 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	char      name[256], issuer[256];
 	X509     *err_cert;
 	int       err;
-	SSL      *ssl;
 
 	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
 		return preverify_ok;
 
 	err_cert = X509_STORE_CTX_get_current_cert(ctx);
 	err = X509_STORE_CTX_get_error(ctx);
-
-	/* Get the pointer to the SSL of the current connection */
-	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
 
 	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
 	X509_NAME_oneline(X509_get_issuer_name(err_cert), issuer, 256);
@@ -805,7 +805,7 @@ char* process_metachars(const char* input)
 	char* copy = strdup(input);
 	int i,j;
 	int length = strlen(input);
-	for (i = 0, j = 0; i < length, j < length; i++, j++) {
+	for (i = 0, j = 0; j < length; i++, j++) {
 		if (copy[j] != '\\') {
 			copy[i] = copy[j];
 			continue;
@@ -856,7 +856,6 @@ char* process_metachars(const char* input)
 /* read in the configuration file */
 int read_config_file(char *filename)
 {
-	struct stat st;
 	FILE     *fp;
 	char      config_file[MAX_FILENAME_LENGTH];
 	char      input_buffer[MAX_INPUT_BUFFER];
@@ -1151,6 +1150,7 @@ int read_config_dir(char *dirname)
 	struct stat buf;
 	char      config_file[MAX_FILENAME_LENGTH];
 	int       result = OK;
+	int rc;
 
 #ifdef HAVE_SCANDIR
 	/* read and sort the directory contents */
@@ -1176,7 +1176,11 @@ int read_config_dir(char *dirname)
 		/* process all files in the directory... */
 
 		/* create the full path to the config file or subdirectory */
-		snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
+		rc = snprintf(config_file, sizeof(config_file) - 1, "%s/%s", dirname, dirfile->d_name);
+		if (rc >= sizeof(config_file) - 1) {
+			logit(LOG_ERR, "Config file path too long '%s/%s'.\n", dirname, dirfile->d_name);
+			return ERROR;
+		}
 		config_file[sizeof(config_file) - 1] = '\x0';
 		stat(config_file, &buf);
 

@@ -937,6 +937,14 @@ void setup_ssl()
 		case SSLv3_plus:
 			SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
 			break;
+
+		case SSLv2:
+		case SSLv2_plus:
+			/* SSLv2 support dropped */
+			break;
+		case SSL_Ver_Invalid:
+			/* Should never be seen, silence warning */
+			break;
 	}
 
 #else		/* OPENSSL_VERSION_NUMBER >= 0x10100000 */
@@ -1150,7 +1158,7 @@ int connect_to_remote()
 		}
 
 		if ((sslprm.log_opts & SSL_LogIfClientCert) || (sslprm.log_opts & SSL_LogCertDetails)) {
-			char peer_cn[256], buffer[2048];
+			char buffer[2048];
 			X509 *peer = SSL_get_peer_certificate(ssl);
 
 			if (peer) {
@@ -1626,16 +1634,12 @@ int verify_callback(int preverify_ok, X509_STORE_CTX * ctx)
 	char name[256], issuer[256];
 	X509 *err_cert;
 	int err;
-	SSL *ssl;
 
 	if (preverify_ok || ((sslprm.log_opts & SSL_LogCertDetails) == 0))
 		return preverify_ok;
 
 	err_cert = X509_STORE_CTX_get_current_cert(ctx);
 	err = X509_STORE_CTX_get_error(ctx);
-
-	/* Get the pointer to the SSL of the current connection */
-	ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
 
 	X509_NAME_oneline(X509_get_subject_name(err_cert), name, 256);
 	X509_NAME_oneline(X509_get_issuer_name(err_cert), issuer, 256);
