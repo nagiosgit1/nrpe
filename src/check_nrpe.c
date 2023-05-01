@@ -119,11 +119,11 @@ int translate_state (char *state_text);
 void set_timeout_state (char *state);
 int parse_timeout_string (char *timeout_str);
 void usage(int result);
-void setup_ssl();
-void set_sig_handlers();
-int connect_to_remote();
-int send_request();
-int read_response();
+void setup_ssl(void);
+void set_sig_handlers(void);
+int connect_to_remote(void);
+int send_request(void);
+int read_response(void);
 int read_packet(int sock, void *ssl_ptr, v2_packet ** v2_pkt, v3_packet ** v3_pkt);
 #ifdef HAVE_SSL
 static int verify_callback(int ok, X509_STORE_CTX * ctx);
@@ -794,7 +794,7 @@ void usage(int result)
 	exit(STATE_UNKNOWN);
 }
 
-void setup_ssl()
+void setup_ssl(void)
 {
 #ifdef HAVE_SSL
 	int vrfy, x;
@@ -1039,7 +1039,7 @@ void setup_ssl()
 #endif
 }
 
-void set_sig_handlers()
+void set_sig_handlers(void)
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction sig_action;
@@ -1059,7 +1059,7 @@ void set_sig_handlers()
 	alarm(socket_timeout);
 }
 
-int connect_to_remote()
+int connect_to_remote(void)
 {
 	struct sockaddr_storage addr;
 	struct in_addr *inaddr;
@@ -1188,7 +1188,7 @@ int connect_to_remote()
 	return result;
 }
 
-int send_request()
+int send_request(void)
 {
 	v2_packet *v2_send_packet = NULL;
 	v3_packet *v3_send_packet = NULL;
@@ -1278,7 +1278,7 @@ int send_request()
 	return STATE_OK;
 }
 
-int read_response()
+int read_response(void)
 {
 	v2_packet *v2_receive_packet = NULL;
 	/* Note: v4 packets will use the v3_packet structure */
